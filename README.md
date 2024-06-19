@@ -123,4 +123,3 @@ A big thanks to [LM Studio](https://lmstudio.ai/) for their local LLMs, and to t
 
 ## 📬 Get in Touch!
 Have suggestions? Found a way to improve this project? I'd love to hear from you. Reach out and let's make AI work for business improvement together!
-```
