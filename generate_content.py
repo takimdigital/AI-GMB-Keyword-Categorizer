@@ -1,12 +1,18 @@
 import pandas as pd
 from openai import OpenAI
 import json
+import os
 
 # Initialize the OpenAI client
 client = OpenAI(base_url="http://localhost:12345/v1", api_key="your_api_key")
 
+# Define the file paths
+base_path = os.path.dirname(os.path.abspath(__file__))
+input_file = os.path.join(base_path, 'updated_GMB_keywords.csv')
+output_file = os.path.join(base_path, 'foundational_content_GMB_keywords_updated.csv')
+
 # Load the enriched CSV file
-data = pd.read_csv('C://Users//Takim//Downloads//updated_GMB_keywords.csv')
+data = pd.read_csv(input_file)
 
 # Define the new columns
 columns = [
@@ -27,18 +33,47 @@ def generate_foundational_content(keyword, category, subcategory):
     completion = client.chat.completions.create(
         model="mradermacher/bophades-v2-mistral-7B-GGUF",
         messages=[
-            {"role": "system", "content": "You are an AI assistant providing detailed content for a cleaning company targeting specific business types. Generate comprehensive, practical, and relevant content based on industry best practices and local SEO optimization."},
-            {"role": "user", "content": f"Based on the GMB keyword '{keyword}', category '{category}', and subcategory '{subcategory}', provide the following information in JSON format:\n\n"
-                                        f"Cleaning Frequency: What is the recommended cleaning frequency for this business type?\n"
-                                        f"Special Cleaning Requirements: List any special cleaning needs or considerations specific to this business type.\n"
-                                        f"Potential Customer Pain Points: Identify common issues or pain points customers in this business type face regarding cleanliness and maintenance.\n"
-                                        f"Suggested Marketing Messages: Provide effective marketing messages that can attract businesses in this category. Include language that emphasizes unique selling points and customer benefits.\n"
-                                        f"Service Packages: Describe suggested cleaning service packages, including names, detailed descriptions, and what each package entails.\n"
-                                        f"Cost Estimates: Provide average cost estimates for each cleaning service package offered.\n"
-                                        f"Competitive Advantages: Highlight unique selling points or competitive advantages that make your cleaning services stand out for this business type.\n"
-                                        f"Compliance Requirements: List any specific compliance or regulatory requirements related to cleanliness and maintenance for this business type.\n"
-                                        f"Quality Standards: Define the standards of quality that need to be met to ensure customer satisfaction and regulatory compliance.\n"
-                                        f"Health & Safety Tips: Offer health and safety tips specific to maintaining a clean and safe environment for this business type."}
+            {
+                "role": "system",
+                "content": (
+                    "You are an AI assistant providing detailed and practical content for a cleaning company "
+                    "targeting specific business types. Your responses should be comprehensive, practical, and relevant, "
+                    "based on industry best practices and local SEO optimization. Each response must include actionable insights "
+                    "and be tailored to the specific business type identified by the GMB keyword, category, and subcategory."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Based on the GMB keyword '{keyword}', category '{category}', and subcategory '{subcategory}', provide the following "
+                    f"information in JSON format with concise and actionable insights. Use the exact structure provided:\n\n"
+                    
+                    "{\n"
+                    "  \"Cleaning Frequency\": \"...\",\n"
+                    "  \"Special Cleaning Requirements\": \"...\",\n"
+                    "  \"Potential Customer Pain Points\": \"...\",\n"
+                    "  \"Suggested Marketing Messages\": \"...\",\n"
+                    "  \"Service Packages\": {\n"
+                    "    \"Basic\": {\n"
+                    "      \"Description\": \"...\",\n"
+                    "      \"Benefits\": \"...\"\n"
+                    "    },\n"
+                    "    \"Premium\": {\n"
+                    "      \"Description\": \"...\",\n"
+                    "      \"Benefits\": \"...\"\n"
+                    "    }\n"
+                    "  },\n"
+                    "  \"Cost Estimates\": {\n"
+                    "    \"Basic\": \"...\",\n"
+                    "    \"Premium\": \"...\"\n"
+                    "  },\n"
+                    "  \"Competitive Advantages\": \"...\",\n"
+                    "  \"Compliance Requirements\": \"...\",\n"
+                    "  \"Quality Standards\": \"...\",\n"
+                    "  \"Health & Safety Tips\": \"...\"\n"
+                    "}"
+                )
+            }
         ],
         temperature=0.7,
     )
@@ -65,18 +100,20 @@ for index, row in data.iterrows():
     # Generate foundational content
     try:
         response_json = generate_foundational_content(keyword, category, subcategory)
-        result = json.loads(response_json)
+        try:
+            result = json.loads(response_json)
+        except json.JSONDecodeError as e:
+            print(f"Failed to parse JSON for keyword '{keyword}'. Response was: {response_json}. Error: {e}")
+            continue
         
         # Verify the JSON contains all required keys and update the DataFrame
         for column in columns:
             data.at[index, column] = result.get(column, 'N/A')
         print(f"Updated row {index} with foundational content.")
         
-    except json.JSONDecodeError:
-        print(f"Failed to parse JSON for keyword '{keyword}'. Response was: {response_json}")
-    except KeyError:
-        print(f"JSON response does not contain all required fields. Response was: {response_json}")
+    except Exception as e:
+        print(f"An error occurred for keyword '{keyword}'. Error: {e}")
 
 # Save the updated DataFrame back to a CSV file
-data.to_csv('C://Users//Takim//Downloads//foundational_content_GMB_keywords_updated.csv', index=False)
+data.to_csv(output_file, index=False)
 print("CSV file has been updated and saved.")
