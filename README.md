@@ -17,7 +17,7 @@ This project was inspired by the need to classify and enrich GMB keywords effici
 ## 🚀 Getting Started
 Clone the repository:
 ```bash
-git clone https://github.com/takimdigital/GMB-Keyword-Categorizer.git
+git clone https://github.com/takimdigital/AI-GMB-Keyword-Categorizer.git
 ```
 
 Navigate to the project directory:
